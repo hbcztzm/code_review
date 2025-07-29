@@ -164,7 +164,7 @@ def load_config(config_path=None):
             }
             with open(config_file, 'w', encoding='utf-8') as f:
                 parser.write(f)
-            print(f"已创建示例配置文件 {config_file}，请编辑它并添加你的API密钥")
+            logging.info(f"已创建示例配置文件 {config_file}，请编辑它并添加你的API密钥")
         except Exception as e:
             logging.warning(f"创建示例配置文件时出错: {e}")
         return config
@@ -196,7 +196,7 @@ def load_config(config_path=None):
             if 'context_lines' in section and section['context_lines']:
                 config['context_lines'] = int(section['context_lines'])
     except Exception as e:
-        print(f"警告: 读取配置文件时出错: {e}", file=sys.stderr)
+        logging.error(f"警告: 读取配置文件时出错: {e}")
     
     return config
 
@@ -231,11 +231,11 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
     # 检查是否包含确认提交标记
     if "confirm commit" in diff_content.lower():
         if verbose:
-            print("检测到确认提交标记，自动通过评审")
+            logging.info("检测到确认提交标记，自动通过评审")
         return True, "检测到确认提交标记，自动通过代码评审\n评审结果: 通过"
     
     if verbose:
-        print("正在发送代码评审请求...")
+        logging.info("正在发送代码评审请求...")
 
     # 构建评审提示
     prompt = f"""
@@ -294,7 +294,7 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
 
         result = response.json()
         if verbose:
-            print("收到API响应")
+            logging.info("收到API响应")
 
         # 提取评审意见
         review_content = result["choices"][0]["message"]["content"].strip()
@@ -313,9 +313,9 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
         return passed, review_content
 
     except Exception as e:
-        print(f"API请求失败: {e}", file=sys.stderr)
+        logging.error(f"API请求失败: {e}")
         if verbose and 'response' in locals():
-            print(f"响应内容: {response.text}", file=sys.stderr)
+            logging.error(f"响应内容: {response.text}",)
         sys.exit(1)
 
 def main():
@@ -334,11 +334,11 @@ def main():
     # 优先级: 命令行参数 > 配置文件 > 默认值
     verbose = args.verbose if args.verbose else config.get('verbose', False)
 
-    print("verbose:",verbose)
+    logging.info("verbose:",verbose)
     # 获取diff内容
     diff_content = get_diff_content(args)
     if verbose:
-        print(f"获取到{len(diff_content)}字节的diff内容")
+        logging.info(f"获取到{len(diff_content)}字节的diff内容")
 
     # 获取API密钥
     api_key = get_api_key(args, config)
@@ -350,10 +350,10 @@ def main():
     temperature = args.temperature or config['temperature']
     
     if verbose:
-        print(f"使用API URL: {api_url}")
-        print(f"使用模型: {model}")
-        print(f"最大令牌数: {max_tokens}")
-        print(f"温度: {temperature}")
+        logging.info(f"使用API URL: {api_url}")
+        logging.info(f"使用模型: {model}")
+        logging.info(f"最大令牌数: {max_tokens}")
+        logging.info(f"温度: {temperature}")
 
     # 进行代码评审
     passed, review_content = review_code(
@@ -367,16 +367,16 @@ def main():
     )
 
     # 输出评审结果
-    print("\n===== 代码评审结果 =====")
-    print(review_content)
-    print("=======================\n")
+    logging.info("\n===== 代码评审结果 =====")
+    logging.info(review_content)
+    logging.info("=======================\n")
 
     # 根据评审结果决定是否允许提交
     if passed:
-        print("✅ 代码评审通过，允许提交")
+        logging.info("✅ 代码评审通过，允许提交")
         sys.exit(0)
     else:
-        print("❌ 代码评审不通过，请修复问题后再次提交")
+        logging.info("❌ 代码评审不通过，请修复问题后再次提交")
         sys.exit(1)
 
 if __name__ == "__main__":
