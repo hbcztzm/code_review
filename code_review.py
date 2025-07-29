@@ -12,8 +12,30 @@ import json
 import argparse
 import requests
 import configparser
+import logging
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
+
+# 初始化日志系统
+def setup_logging():
+    log_dir = Path(".git/logs")
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "code_review.log"
+        
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(log_file),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
+    except Exception as e:
+        print(f"初始化日志失败: {e}", file=sys.stderr)
+        sys.exit(1)
+
+setup_logging()
 
 # 默认的OpenAI API配置
 DEFAULT_API_URL = "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
@@ -56,7 +78,7 @@ def get_diff_content(args) -> str:
             with open(args.diff_file, 'r', encoding='utf-8') as f:
                 return f.read()
         except Exception as e:
-            print(f"读取diff文件失败: {e}", file=sys.stderr)
+            logging.error(f"读取diff文件失败: {e}")
             sys.exit(1)
     
     # 否则，尝试自动调用git diff
@@ -89,22 +111,22 @@ def get_diff_content(args) -> str:
             # 如果没有差异，提示用户
             if not diff_content.strip():
                 if args.staged:
-                    print("没有暂存的变更。请使用 'git add' 添加要评审的文件。", file=sys.stderr)
+                    logging.error("没有暂存的变更。请使用 'git add' 添加要评审的文件。")
                 elif args.working_tree:
-                    print("工作区没有未提交的变更。如果你已经暂存了变更，请使用 --staged 参数。", file=sys.stderr)
+                    logging.error("工作区没有未提交的变更。如果你已经暂存了变更，请使用 --staged 参数。")
                 else:
-                    print("没有检测到代码变更。", file=sys.stderr)
+                    logging.error("没有检测到代码变更。")
                 sys.exit(0)
             
             return diff_content
             
         except subprocess.CalledProcessError as e:
-            print(f"执行git命令失败: {e}", file=sys.stderr)
-            print("请确保你在Git仓库中运行此脚本，或者使用--diff或--diff-file参数提供差异内容。", file=sys.stderr)
+            logging.error(f"执行git命令失败: {e}")
+            logging.error("请确保你在Git仓库中运行此脚本，或者使用--diff或--diff-file参数提供差异内容。")
             sys.exit(1)
         except Exception as e:
-            print(f"获取Git差异失败: {e}", file=sys.stderr)
-            print("请使用--diff或--diff-file参数手动提供差异内容。", file=sys.stderr)
+            logging.error(f"获取Git差异失败: {e}")
+            logging.error("请使用--diff或--diff-file参数手动提供差异内容。")
             sys.exit(1)
 
 def load_config(config_path=None):
@@ -144,7 +166,7 @@ def load_config(config_path=None):
                 parser.write(f)
             print(f"已创建示例配置文件 {config_file}，请编辑它并添加你的API密钥")
         except Exception as e:
-            print(f"警告: 创建示例配置文件时出错: {e}", file=sys.stderr)
+            logging.warning(f"创建示例配置文件时出错: {e}")
         return config
     
     try:
@@ -192,10 +214,10 @@ def get_api_key(args, config) -> str:
     if api_key:
         return api_key
 
-    print("错误: 未提供OpenAI API密钥。请通过以下方式之一提供:", file=sys.stderr)
-    print(f"1. 编辑配置文件 {args.config} 并添加你的API密钥", file=sys.stderr)
-    print("2. 使用命令行参数: --api-key YOUR_API_KEY", file=sys.stderr)
-    print("3. 设置环境变量: export OPENAI_API_KEY=YOUR_API_KEY", file=sys.stderr)
+    logging.error("错误: 未提供OpenAI API密钥。请通过以下方式之一提供:")
+    logging.error(f"1. 编辑配置文件 {args.config} 并添加你的API密钥")
+    logging.error("2. 使用命令行参数: --api-key YOUR_API_KEY")
+    logging.error("3. 设置环境变量: export OPENAI_API_KEY=YOUR_API_KEY")
     sys.exit(1)
 
 def review_code(diff_content: str, api_key: str, api_url: str, model: str,
