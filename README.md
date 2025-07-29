@@ -80,6 +80,9 @@ temperature = 0.1
 ### 增加日志配置 
 日志保存路径为 .git/logs/code_review.log
 
+### 跳过代码审核
+在提交时，提交的msg中包含confirm commit 则跳过代码审核
+
 
 ### 命令行参数
 
