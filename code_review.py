@@ -334,7 +334,7 @@ def main():
     # 优先级: 命令行参数 > 配置文件 > 默认值
     verbose = args.verbose if args.verbose else config.get('verbose', False)
 
-    logging.info("verbose:",verbose)
+    logging.info(f"verbose:{verbose}",)
     # 获取diff内容
     diff_content = get_diff_content(args)
     if verbose:
