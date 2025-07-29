@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# 检查是否跳过代码评审
+if [ "$GIT_NO_VERIFY" = "1" ] || 
+   [ "$(git config --get hooks.no-verify)" = "true" ] ||
+   ( [ -n "$*" ] && [[ "$*" =~ "--no-verify" ]] ); then
+    echo "⚠️ 警告：跳过代码评审(--no-verify)"
+    exit 0
+fi
+
 # 获取当前Git仓库的根目录
 REPO_ROOT=$(git rev-parse --show-toplevel)
 

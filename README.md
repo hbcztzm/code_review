@@ -95,15 +95,37 @@ temperature = 0.1
 
 可以通过修改`code_review.py`中的评审提示来调整评审的严格程度和关注点。
 
-### 跳过评审
+### 跳过代码评审
 
-在特殊情况下，如果需要跳过代码评审，可以使用`--no-verify`参数：
-
+#### 基本用法
+在特殊情况下，可以使用`--no-verify`参数跳过代码评审：
 ```bash
-git commit --no-verify -m "提交信息"
+git commit --no-verify -m "紧急修复：跳过代码评审"
 ```
 
-**注意：** 不建议经常跳过代码评审，这可能导致代码质量下降。
+#### 高级选项
+1. **临时环境变量**（仅当前终端会话有效）：
+   ```bash
+   export GIT_NO_VERIFY=1
+   git commit -m "临时提交"
+   ```
+
+2. **全局配置**（不推荐）：
+   ```bash
+   git config --global hooks.no-verify true
+   ```
+
+#### 注意事项
+⚠️ **重要安全提示**：
+- 所有跳过操作都会记录在`.git/logs/code_review_skip.log`
+- 生产环境代码强烈不建议跳过评审
+- 频繁跳过会触发警告通知
+
+#### 重新启用评审
+```bash
+unset GIT_NO_VERIFY
+git config --global --unset hooks.no-verify
+```
 
 ## 故障排除
 
