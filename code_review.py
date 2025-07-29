@@ -220,6 +220,17 @@ def get_api_key(args, config) -> str:
     logging.error("3. 设置环境变量: export OPENAI_API_KEY=YOUR_API_KEY")
     sys.exit(1)
 
+def get_commit_message() -> str:
+    """获取当前提交消息"""
+    import subprocess
+    try:
+        result = subprocess.run(['git', 'log', '-1', '--pretty=%B'], 
+                              check=True, capture_output=True, text=True)
+        return result.stdout.strip()
+    except Exception as e:
+        logging.error(f"获取提交消息失败: {e}")
+        return ""
+
 def review_code(diff_content: str, api_key: str, api_url: str, model: str,
                 max_tokens: int, temperature: float, verbose: bool) -> Tuple[bool, str]:
     """
@@ -228,11 +239,11 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
     返回:
         (通过评审?, 评审意见)
     """
-    # 检查是否包含确认提交标记
-    if "confirm commit" in diff_content.lower():
-        logging.info(f"diff_content\n{diff_content}\n检测到confirm commit 确认提交标记，自动通过评审")
+    # 检查提交消息中是否包含确认提交标记
+    commit_msg = get_commit_message()
+    if "confirm commit" in commit_msg.lower():
+        logging.info(f"提交消息: {commit_msg}\n检测到confirm commit确认提交标记，自动通过评审")
         if verbose:
-            logging.info(f"检测到verbose{verbose}确认提交标记")
             logging.info("检测到确认提交标记，自动通过评审")
         return True, "检测到确认提交标记，自动通过代码评审\n评审结果: 通过"
     
@@ -255,7 +266,7 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
 
 强制通过条件（满足任一即可）：
 1. 代码实现基本功能且无严重缺陷
-2. 包含"confirm commit"标记
+2. 提交消息中包含"confirm commit"标记
 
 强制否决条件（满足任一即否决）：
 1. 代码无法编译/运行

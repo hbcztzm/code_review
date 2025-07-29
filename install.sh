@@ -10,23 +10,43 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}[安装]${NC} 开始安装Git代码评审钩子..."
+# 默认目标目录
+DEFAULT_TARGET="$HOME/PycharmProjects/code_review"
 
-# 检查是否在Git仓库中
-if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-    echo -e "${RED}错误: 当前目录不是Git仓库${NC}" >&2
-    exit 1
+# 解析参数
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --target-dir)
+            PROJECT_ROOT="$2"
+            shift 2
+            ;;
+        *)
+            echo -e "${RED}错误: 未知参数: $1${NC}" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# 如果没有指定目标目录，使用默认值
+if [ -z "$PROJECT_ROOT" ]; then
+    PROJECT_ROOT="$DEFAULT_TARGET"
 fi
 
-# 获取项目根目录
-PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+echo -e "${BLUE}[安装]${NC} 开始安装Git代码评审钩子到: $PROJECT_ROOT"
+
+# 检查目标目录是否为Git仓库
+if [ ! -d "$PROJECT_ROOT/.git" ]; then
+    echo -e "${RED}错误: 目标目录不是Git仓库: $PROJECT_ROOT${NC}" >&2
+    exit 1
+fi
 # 钩子源文件和目标文件
-HOOK_SOURCE="${PROJECT_ROOT}/hooks/pre-commit"
+HOOK_SOURCE="$PWD/hooks/pre-commit"
 HOOK_TARGET="${PROJECT_ROOT}/.git/hooks/pre-commit"
 
 # 检查钩子源文件是否存在
 if [ ! -f "$HOOK_SOURCE" ]; then
     echo -e "${RED}错误: 未找到钩子源文件: ${HOOK_SOURCE}${NC}" >&2
+    echo -e "${YELLOW}提示: 请确保hooks/pre-commit文件与install.sh在同一目录${NC}"
     exit 1
 fi
 
@@ -37,9 +57,10 @@ if [ ! -x "$HOOK_SOURCE" ]; then
 fi
 
 # 检查评审脚本是否存在并可执行
-REVIEW_SCRIPT="${PROJECT_ROOT}/code_review.py"
+REVIEW_SCRIPT="$PWD/code_review.py"
 if [ ! -f "$REVIEW_SCRIPT" ]; then
     echo -e "${RED}错误: 未找到代码评审脚本: ${REVIEW_SCRIPT}${NC}" >&2
+    echo -e "${YELLOW}提示: 请确保code_review.py文件与install.sh在同一目录${NC}"
     exit 1
 fi
 if [ ! -x "$REVIEW_SCRIPT" ]; then
@@ -92,4 +113,6 @@ if [ -z "$OPENAI_API_KEY" ]; then
 fi
 
 echo -e "${GREEN}[安装]${NC} 安装完成！"
+echo -e "${GREEN}[安装]${NC} 评审脚本位置: $PWD/code_review.py"
+echo -e "${GREEN}[安装]${NC} 钩子安装位置: ${PROJECT_ROOT}/.git/hooks/pre-commit"
 echo -e "${GREEN}[安装]${NC} 现在每次git commit前都会进行代码评审"
