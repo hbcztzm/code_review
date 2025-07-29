@@ -77,6 +77,10 @@ temperature = 0.1
 ./code_review.py --config /path/to/your/config.ini --diff-file changes.diff
 ```
 
+### 增加日志配置 
+日志保存路径为 .git/logs/code_review.log
+
+
 ### 命令行参数
 
 你可以通过命令行参数覆盖配置文件中的设置：
