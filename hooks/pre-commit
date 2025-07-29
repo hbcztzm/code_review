@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# 获取当前Git仓库的根目录
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# 查找代码评审脚本
+CODE_REVIEW_SCRIPT="$REPO_ROOT/code_review.py"
+if [ ! -f "$CODE_REVIEW_SCRIPT" ]; then
+    # 尝试在全局安装路径查找
+    CODE_REVIEW_SCRIPT="/usr/local/bin/code_review.py"
+    if [ ! -f "$CODE_REVIEW_SCRIPT" ]; then
+        echo "错误: 找不到代码评审脚本"
+        exit 1
+    fi
+fi
+
+# 查找配置文件
+CONFIG_FILE="$HOME/.code_review_config.ini"
+CONFIG_PARAM=""
+if [ -f "$CONFIG_FILE" ]; then
+    CONFIG_PARAM="--config $CONFIG_FILE"
+fi
+
+# 运行代码评审，使用--staged参数直接评审暂存区的变更
+echo "正在进行代码评审..."
+python3 "$CODE_REVIEW_SCRIPT" --staged $CONFIG_PARAM
+
+# 获取评审结果
+REVIEW_RESULT=$?
+
+# 返回评审结果
+exit $REVIEW_RESULT
