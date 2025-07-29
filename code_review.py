@@ -230,7 +230,7 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
     """
     # 检查是否包含确认提交标记
     if "confirm commit" in diff_content.lower():
-        logging.info("检测到confirm commit 确认提交标记，自动通过评审")
+        logging.info(f"diff_content\n{diff_content}\n检测到confirm commit 确认提交标记，自动通过评审")
         if verbose:
             logging.info(f"检测到verbose{verbose}确认提交标记")
             logging.info("检测到确认提交标记，自动通过评审")
