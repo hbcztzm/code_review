@@ -223,7 +223,7 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
 {diff_content}
 ```
 
-评审标准说明（放宽后的标准）：
+评审标准说明：
 1. 代码质量：仅否决存在严重混淆或无法运行的结构性问题
 2. 潜在问题：仅否决会导致系统崩溃/数据损坏的安全漏洞
 3. 最佳实践：接受基本功能实现，不强制高级设计模式
