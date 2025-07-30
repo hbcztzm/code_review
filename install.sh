@@ -40,13 +40,13 @@ if [ ! -d "$PROJECT_ROOT/.git" ]; then
     exit 1
 fi
 # 钩子源文件和目标文件
-HOOK_SOURCE="$PWD/hooks/pre-commit"
-HOOK_TARGET="${PROJECT_ROOT}/.git/hooks/pre-commit"
+HOOK_SOURCE="$PWD/hooks/commit-msg"
+HOOK_TARGET="${PROJECT_ROOT}/.git/hooks/commit-msg"
 
 # 检查钩子源文件是否存在
 if [ ! -f "$HOOK_SOURCE" ]; then
     echo -e "${RED}错误: 未找到钩子源文件: ${HOOK_SOURCE}${NC}" >&2
-    echo -e "${YELLOW}提示: 请确保hooks/pre-commit文件与install.sh在同一目录${NC}"
+    echo -e "${YELLOW}提示: 请确保hooks/commit-msg文件与install.sh在同一目录${NC}"
     exit 1
 fi
 
@@ -81,12 +81,12 @@ mkdir -p "$(dirname "$HOOK_TARGET")"
 # 备份现有钩子（如果存在）
 if [ -f "$HOOK_TARGET" ]; then
     BACKUP_FILE="${HOOK_TARGET}.backup.$(date +%Y%m%d%H%M%S)"
-    echo -e "${YELLOW}警告: 已存在pre-commit钩子，正在备份到 ${BACKUP_FILE}${NC}"
+    echo -e "${YELLOW}警告: 已存在commit-msg钩子，正在备份到 ${BACKUP_FILE}${NC}"
     mv "$HOOK_TARGET" "$BACKUP_FILE"
 fi
 
 # 创建符号链接
-echo -e "${BLUE}[安装]${NC} 正在安装pre-commit钩子..."
+echo -e "${BLUE}[安装]${NC} 正在安装commit-msg钩子..."
 ln -sf "$HOOK_SOURCE" "$HOOK_TARGET"
 
 # 检查OpenAI API密钥是否设置
@@ -114,5 +114,5 @@ fi
 
 echo -e "${GREEN}[安装]${NC} 安装完成！"
 echo -e "${GREEN}[安装]${NC} 评审脚本位置: $PWD/code_review.py"
-echo -e "${GREEN}[安装]${NC} 钩子安装位置: ${PROJECT_ROOT}/.git/hooks/pre-commit"
+echo -e "${GREEN}[安装]${NC} 钩子安装位置: ${PROJECT_ROOT}/.git/hooks/commit-msg"
 echo -e "${GREEN}[安装]${NC} 现在每次git commit前都会进行代码评审"
