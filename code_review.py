@@ -63,6 +63,7 @@ def parse_arguments(config):
     parser.add_argument('--verbose', action='store_true', help='显示详细输出')
     parser.add_argument('--working-tree', action='store_true', default=True, help='评审工作区的变更 (git diff) - 默认行为')
     parser.add_argument('--context', '-c', type=int, default=config['context_lines'], help=f'显示的上下文行数 (默认: {config["context_lines"]})')
+    parser.add_argument('--commit-msg', type=str, help='提交消息内容')
 
     return parser.parse_args()
 
@@ -219,20 +220,18 @@ def get_api_key(args, config) -> str:
     logging.error("2. 使用命令行参数: --api-key YOUR_API_KEY")
     logging.error("3. 设置环境变量: export OPENAI_API_KEY=YOUR_API_KEY")
     sys.exit(1)
-
-def get_commit_message() -> str:
-    """获取当前提交消息"""
-    import subprocess
-    try:
-        result = subprocess.run(['git', 'log', '-1', '--pretty=%B'], 
-                              check=True, capture_output=True, text=True)
-        return result.stdout.strip()
-    except Exception as e:
-        logging.error(f"获取提交消息失败: {e}")
-        return ""
+def get_commit_message(commit_msg: str = None) -> str:
+    """获取当前提交消息
+    Args:
+        commit_msg: 提交消息内容，由pre-commit钩子传入
+    """
+    if commit_msg:
+        return commit_msg.strip()
+    return ""
 
 def review_code(diff_content: str, api_key: str, api_url: str, model: str,
-                max_tokens: int, temperature: float, verbose: bool) -> Tuple[bool, str]:
+                max_tokens: int, temperature: float, verbose: bool,
+                commit_msg: str = None) -> Tuple[bool, str]:
     """
     使用OpenAI API对代码进行评审
 
@@ -240,9 +239,9 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
         (通过评审?, 评审意见)
     """
     # 检查提交消息中是否包含确认提交标记
-    commit_msg = get_commit_message()
+    commit_msg = get_commit_message(commit_msg)
+    logging.info(f"提交消息: {commit_msg}\n")
     if "confirm commit" in commit_msg.lower():
-        logging.info(f"提交消息: {commit_msg}\n检测到confirm commit确认提交标记，自动通过评审")
         if verbose:
             logging.info("检测到确认提交标记，自动通过评审")
         return True, "检测到确认提交标记，自动通过代码评审\n评审结果: 通过"
@@ -376,7 +375,8 @@ def main():
         model=model,
         max_tokens=max_tokens,
         temperature=temperature,
-        verbose=verbose
+        verbose=verbose,
+        commit_msg=args.commit_msg
     )
 
     # 输出评审结果

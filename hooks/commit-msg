@@ -1,7 +1,10 @@
 #!/bin/bash
 
+commit_msg=`cat $1`
+echo "msg $commit_msg"
+
 # 检查是否跳过代码评审
-if [ "$GIT_NO_VERIFY" = "1" ] || 
+if [ "$GIT_NO_VERIFY" = "1" ] ||
    [ "$(git config --get hooks.no-verify)" = "true" ] ||
    ( [ -n "$*" ] && [[ "$*" =~ "--no-verify" ]] ); then
     echo "⚠️ 警告：跳过代码评审(--no-verify)"
@@ -31,7 +34,7 @@ fi
 
 # 运行代码评审，使用--staged参数直接评审暂存区的变更
 echo "正在进行代码评审..."
-python3 "$CODE_REVIEW_SCRIPT" --staged $CONFIG_PARAM
+python3 "$CODE_REVIEW_SCRIPT" --staged $CONFIG_PARAM --commit-msg "$commit_msg"
 
 # 获取评审结果
 REVIEW_RESULT=$?
