@@ -8,13 +8,12 @@
 
 import os
 import sys
-import json
 import argparse
 import requests
 import configparser
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Tuple
 
 # 初始化日志系统
 def setup_logging():
@@ -60,7 +59,7 @@ def parse_arguments(config):
     parser.add_argument('--model', type=str, help='OpenAI模型名称')
     parser.add_argument('--max-tokens', type=int, help='最大生成令牌数')
     parser.add_argument('--temperature', type=float, help='生成温度')
-    parser.add_argument('--verbose', action='store_true', help='显示详细输出')
+    parser.add_argument('--verbose', action='store_true', help='显示详细日志信息')
     parser.add_argument('--working-tree', action='store_true', default=True, help='评审工作区的变更 (git diff) - 默认行为')
     parser.add_argument('--context', '-c', type=int, default=config['context_lines'], help=f'显示的上下文行数 (默认: {config["context_lines"]})')
     parser.add_argument('--commit-msg', type=str, help='提交消息内容')
