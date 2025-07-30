@@ -11,7 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 默认目标目录
-DEFAULT_TARGET="$HOME/PycharmProjects/code_review"
+DEFAULT_TARGET="$PWD"
 
 # 解析参数
 while [[ $# -gt 0 ]]; do
@@ -70,9 +70,9 @@ fi
 
 # 安装Python依赖
 echo -e "${BLUE}[安装]${NC} 正在安装Python依赖..."
-if ! pip install -r "${PROJECT_ROOT}/requirements.txt"; then
+if ! pip install -r "${DEFAULT_TARGET}/requirements.txt"; then
     echo -e "${YELLOW}警告: 安装Python依赖失败，请手动安装${NC}"
-    echo -e "${YELLOW}运行: pip install -r ${PROJECT_ROOT}/requirements.txt${NC}"
+    echo -e "${YELLOW}运行: pip install -r ${DEFAULT_TARGET}/requirements.txt${NC}"
 fi
 
 # 创建钩子目录（如果不存在）
@@ -95,10 +95,10 @@ if [ -z "$OPENAI_API_KEY" ]; then
     echo -e "${YELLOW}您可以通过以下方式提供API密钥:${NC}"
     echo -e "${YELLOW}  1. 设置环境变量: export OPENAI_API_KEY='your-api-key'${NC}"
     echo -e "${YELLOW}  2. 创建配置文件: ~/.code_review_config.ini${NC}"
-    echo -e "${YELLOW}     配置文件示例可在 ${PROJECT_ROOT}/config_example.ini 中找到${NC}"
+    echo -e "${YELLOW}     配置文件示例可在 ${DEFAULT_TARGET}/config_example.ini 中找到${NC}"
     
     # 复制配置示例文件
-    CONFIG_EXAMPLE="${PROJECT_ROOT}/config_example.ini"
+    CONFIG_EXAMPLE="${DEFAULT_TARGET}/config_example.ini"
     if [ -f "$CONFIG_EXAMPLE" ]; then
         echo -e "${BLUE}[安装]${NC} 是否要创建配置文件? [y/N] "
         read -r CREATE_CONFIG
