@@ -68,24 +68,36 @@ def parse_arguments(config):
 
 def filter_diff_by_extensions(diff_content: str, extensions: list) -> str:
     """根据文件后缀过滤diff内容"""
-    logging.info(diff_content)
-    logging.info(extensions)
     if not extensions:
         return diff_content
     
     filtered_diff = []
-    current_file = None
-    include_file = False
+    current_block = []
+    in_block = False
+    include_block = False
     
     for line in diff_content.split('\n'):
-        # 检查是否是文件头行 (如 "+++ b/path/to/file.py")
-        if line.startswith('+++ b/'):
-            current_file = line[6:]  # 去掉 "+++ b/" 前缀
-            include_file = any(current_file.endswith(ext) for ext in extensions)
-        
-        if include_file or line.startswith('diff --git'):
-            filtered_diff.append(line)
-    logging.info(filtered_diff)
+        if line.startswith('diff --git'):
+            # 处理前一个块
+            if in_block and include_block:
+                filtered_diff.extend(current_block)
+            # 开始新块
+            in_block = True
+            include_block = False
+            current_block = [line]
+        elif in_block:
+            current_block.append(line)
+            if line.startswith('+++ b/'):
+                current_file = line[6:]  # 去掉 "+++ b/" 前缀
+                include_block = any(current_file.endswith(ext) for ext in extensions)
+        else:
+            if include_block:
+                filtered_diff.append(line)
+    
+    # 处理最后一个块
+    if in_block and include_block:
+        filtered_diff.extend(current_block)
+    
     return '\n'.join(filtered_diff)
 
 def get_diff_content(args, config) -> str:
@@ -269,6 +281,12 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
         (通过评审?, 评审意见)
     """
     # 检查提交消息中是否包含确认提交标记
+    if len(diff_content)==0:
+        if verbose:
+            logging.info("没有代码变更，自动通过评审")
+        return True, "没有代码变更，自动通过评审\n评审结果: 通过"
+
+
     commit_msg = get_commit_message(commit_msg)
     logging.info(f"提交消息: {commit_msg}\n")
     if "confirm commit" in commit_msg.lower():
