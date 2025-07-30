@@ -97,7 +97,7 @@ def filter_diff_by_extensions(diff_content: str, extensions: list) -> str:
     # 处理最后一个块
     if in_block and include_block:
         filtered_diff.extend(current_block)
-    
+    logging.info(filtered_diff)
     return '\n'.join(filtered_diff)
 
 def get_diff_content(args, config) -> str:
@@ -311,9 +311,10 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
 3. 最佳实践：接受基本功能实现，不强制高级设计模式
 4. 可维护性：接受需简单注释即可理解的代码
 
-强制通过条件（满足任一即可）：
+强制通过条件：
 1. 代码实现基本功能且无严重缺陷
-2. 提交消息中包含"confirm commit"标记
+2. 代码没有安全问题
+
 
 强制否决条件（满足任一即否决）：
 1. 代码无法编译/运行
