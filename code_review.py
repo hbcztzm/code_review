@@ -66,17 +66,41 @@ def parse_arguments(config):
 
     return parser.parse_args()
 
-def get_diff_content(args) -> str:
+def filter_diff_by_extensions(diff_content: str, extensions: list) -> str:
+    """根据文件后缀过滤diff内容"""
+    logging.info(diff_content)
+    logging.info(extensions)
+    if not extensions:
+        return diff_content
+    
+    filtered_diff = []
+    current_file = None
+    include_file = False
+    
+    for line in diff_content.split('\n'):
+        # 检查是否是文件头行 (如 "+++ b/path/to/file.py")
+        if line.startswith('+++ b/'):
+            current_file = line[6:]  # 去掉 "+++ b/" 前缀
+            include_file = any(current_file.endswith(ext) for ext in extensions)
+        
+        if include_file or line.startswith('diff --git'):
+            filtered_diff.append(line)
+    logging.info(filtered_diff)
+    return '\n'.join(filtered_diff)
+
+def get_diff_content(args, config) -> str:
     """获取Git diff内容"""
     # 如果提供了直接的diff内容，优先使用
     if args.diff:
-        return args.diff
+        diff_content = args.diff
+        return filter_diff_by_extensions(diff_content, config['file_extensions'])
     
     # 如果提供了diff文件路径，从文件读取
     elif args.diff_file:
         try:
             with open(args.diff_file, 'r', encoding='utf-8') as f:
-                return f.read()
+                diff_content = f.read()
+                return filter_diff_by_extensions(diff_content, config['file_extensions'])
         except Exception as e:
             logging.error(f"读取diff文件失败: {e}")
             sys.exit(1)
@@ -87,7 +111,7 @@ def get_diff_content(args) -> str:
         
         try:
             # 检查是否在Git仓库中
-            subprocess.run(['git', 'rev-parse', '--is-inside-work-tree'], 
+            subprocess.run(['git', 'rev-parse', '--is-inside-work-tree'],
                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             git_cmd = ['git', 'diff', f'-U{args.context}']  # 使用用户指定的上下文行数
@@ -118,7 +142,8 @@ def get_diff_content(args) -> str:
                     logging.error("没有检测到代码变更。")
                 sys.exit(0)
             
-            return diff_content
+            # 过滤diff内容
+            return filter_diff_by_extensions(diff_content, config['file_extensions'])
             
         except subprocess.CalledProcessError as e:
             logging.error(f"执行git命令失败: {e}")
@@ -138,7 +163,8 @@ def load_config(config_path=None):
         'max_tokens': DEFAULT_MAX_TOKENS,
         'temperature': DEFAULT_TEMPERATURE,
         'verbose': False,
-        'context_lines': 10  # 默认显示10行上下文
+        'context_lines': 10,  # 默认显示10行上下文
+        'file_extensions': []  # 默认扫描所有文件
     }
     
     # 如果未指定配置文件路径，使用默认路径
@@ -195,6 +221,11 @@ def load_config(config_path=None):
             section = parser['git']
             if 'context_lines' in section and section['context_lines']:
                 config['context_lines'] = int(section['context_lines'])
+            if 'file_extensions' in section and section['file_extensions']:
+                config['file_extensions'] = [
+                    ext.strip() for ext in section['file_extensions'].split(',') 
+                    if ext.strip()
+                ]
     except Exception as e:
         logging.error(f"警告: 读取配置文件时出错: {e}")
     
@@ -347,7 +378,7 @@ def main():
 
     logging.info(f"verbose:{verbose}")
     # 获取diff内容
-    diff_content = get_diff_content(args)
+    diff_content = get_diff_content(args, config)
     if verbose:
         logging.info(f"获取到{len(diff_content)}字节的diff内容")
 
