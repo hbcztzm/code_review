@@ -7,6 +7,7 @@
 """
 
 import os
+import re
 import sys
 import argparse
 import requests
@@ -100,19 +101,109 @@ def filter_diff_by_extensions(diff_content: str, extensions: list) -> str:
     logging.info(filtered_diff)
     return '\n'.join(filtered_diff)
 
+def optimize_diff_content(diff_content: str, config: dict) -> str:
+    """优化差异内容以减少token消耗"""
+    if not diff_content:
+        return diff_content
+    
+    # 按文件分割差异内容
+    diff_blocks = []
+    current_block = []
+    is_new_file = False
+    
+    for line in diff_content.split('\n'):
+        if line.startswith('diff --git'):
+            if current_block:
+                diff_blocks.append((is_new_file, '\n'.join(current_block)))
+            current_block = [line]
+            is_new_file = False
+        elif line.startswith('+++ b/') and not any(l.startswith('--- a/') for l in current_block):
+            is_new_file = True
+            current_block.append(line)
+        else:
+            current_block.append(line)
+    if current_block:
+        diff_blocks.append((is_new_file, '\n'.join(current_block)))
+    
+    optimized_blocks = []
+    
+    for is_new, block in diff_blocks:
+        lines = block.split('\n')
+        max_lines = config.get('max_new_file_lines', 200) if is_new else config.get('max_diff_lines', 500)
+        
+        if len(lines) > max_lines:
+            # 优先保留关键内容
+            important_lines = []
+            other_lines = []
+            for line in lines:
+                if any(re.search(pattern, line) for pattern in config.get('priority_patterns', [])):
+                    important_lines.append(line)
+                elif is_new and line.startswith('+') and not line.startswith('++'):
+                    # 对于新增文件，也保留部分新增内容
+                    other_lines.append(line)
+                elif not is_new:
+                    other_lines.append(line)
+            
+            # 保留所有关键内容+部分其他内容
+            keep_lines = important_lines + other_lines[:max_lines - len(important_lines)]
+            optimized_block = '\n'.join(keep_lines)
+            trunc_msg = f"\n... (truncated {len(lines) - len(keep_lines)} lines, {'new file' if is_new else 'modified file'})"
+            optimized_blocks.append(optimized_block + trunc_msg)
+        else:
+            optimized_blocks.append(block)
+    
+    return '\n'.join(optimized_blocks)
+
+def compress_content(content: str, config: dict) -> str:
+    """压缩内容以减少token使用"""
+    if not content or not config.get('enable_compression', True):
+        return content
+    
+    # 移除多余空白行
+    lines = [line for line in content.split('\n') if line.strip() != '']
+    
+    # 简化常见模式
+    compressed = []
+    for line in lines:
+        # 简化import语句
+        if line.startswith('import ') or line.startswith('from '):
+            line = line.replace(' ', '')
+        # 移除行尾注释
+        line = line.split('#')[0].rstrip()
+        compressed.append(line)
+    
+    # 合并短行
+    merged = []
+    current_line = ''
+    for line in compressed:
+        if len(line) < 20 and len(current_line) + len(line) < 80:
+            current_line += '; ' + line if current_line else line
+        else:
+            if current_line:
+                merged.append(current_line)
+            current_line = line
+    if current_line:
+        merged.append(current_line)
+    
+    return '\n'.join(merged)
+
 def get_diff_content(args, config) -> str:
     """获取Git diff内容"""
     # 如果提供了直接的diff内容，优先使用
     if args.diff:
         diff_content = args.diff
-        return filter_diff_by_extensions(diff_content, config['file_extensions'])
+        filtered = filter_diff_by_extensions(diff_content, config['file_extensions'])
+        optimized = optimize_diff_content(filtered, config)
+        return compress_content(optimized, config)
     
     # 如果提供了diff文件路径，从文件读取
     elif args.diff_file:
         try:
             with open(args.diff_file, 'r', encoding='utf-8') as f:
                 diff_content = f.read()
-                return filter_diff_by_extensions(diff_content, config['file_extensions'])
+                filtered = filter_diff_by_extensions(diff_content, config['file_extensions'])
+                optimized = optimize_diff_content(filtered, config)
+                return compress_content(optimized, config)
         except Exception as e:
             logging.error(f"读取diff文件失败: {e}")
             sys.exit(1)
@@ -176,7 +267,13 @@ def load_config(config_path=None):
         'temperature': DEFAULT_TEMPERATURE,
         'verbose': False,
         'context_lines': 10,  # 默认显示10行上下文
-        'file_extensions': []  # 默认扫描所有文件
+        'file_extensions': [],  # 默认扫描所有文件
+        'max_diff_lines': 500,  # 默认最大差异行数
+        'priority_patterns': [  # 优先保留的模式
+            r'^\s*def\s+\w+\(',  # 函数定义
+            r'^\s*class\s+\w+',  # 类定义
+            r'^\s*@\w+'  # 装饰器
+        ]
     }
     
     # 如果未指定配置文件路径，使用默认路径
