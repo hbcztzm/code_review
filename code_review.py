@@ -314,6 +314,7 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
 强制通过条件：
 1. 代码实现基本功能且无严重缺陷
 2. 代码没有安全问题
+3. 对测试类和测试代码执行宽松校验
 
 
 强制否决条件（满足任一即否决）：

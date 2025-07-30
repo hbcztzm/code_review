@@ -63,9 +63,11 @@ if [ ! -f "$REVIEW_SCRIPT" ]; then
     echo -e "${YELLOW}提示: 请确保code_review.py文件与install.sh在同一目录${NC}"
     exit 1
 fi
-if [ ! -x "$REVIEW_SCRIPT" ]; then
+SCRIPT_TARGET="${PROJECT_ROOT}/.git/code_review.py"
+cp "$REVIEW_SCRIPT" "$SCRIPT_TARGET"
+if [ ! -x "$SCRIPT_TARGET" ]; then
     echo -e "${YELLOW}警告: 代码评审脚本不可执行，正在添加执行权限...${NC}"
-    chmod +x "$REVIEW_SCRIPT"
+    chmod +x "$SCRIPT_TARGET"
 fi
 
 # 安装Python依赖

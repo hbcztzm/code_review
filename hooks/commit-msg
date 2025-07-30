@@ -15,7 +15,7 @@ fi
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
 # 查找代码评审脚本
-CODE_REVIEW_SCRIPT="$REPO_ROOT/code_review.py"
+CODE_REVIEW_SCRIPT="$REPO_ROOT/.git/code_review.py"
 if [ ! -f "$CODE_REVIEW_SCRIPT" ]; then
     # 尝试在全局安装路径查找
     CODE_REVIEW_SCRIPT="/usr/local/bin/code_review.py"
