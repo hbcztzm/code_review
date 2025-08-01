@@ -448,7 +448,7 @@ def review_code(diff_content: str, api_key: str, api_url: str, model: str,
 
     try:
         
-        response = requests.post(api_url, headers=headers, json=payload, timeout=160)
+        response = requests.post(api_url, headers=headers, json=payload, timeout=600)
         response.raise_for_status()  # 如果请求失败，抛出异常
 
         result = response.json()

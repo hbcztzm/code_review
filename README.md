@@ -1,6 +1,6 @@
 # Git代码评审助手
 
-这个项目提供了一个Git pre-commit钩子，可以在提交代码前自动使用OpenAI API进行代码评审。如果评审通过，允许提交；如果评审不通过，则阻止提交并显示需要修复的问题。
+这个项目提供了一个Git commit-msg钩子，可以在提交代码前自动使用OpenAI API进行代码评审。如果评审通过，允许提交；如果评审不通过，则阻止提交并显示需要修复的问题。
 
 ## 功能特点
 
@@ -33,7 +33,7 @@
    
    这个脚本会：
    - 安装必要的Python依赖
-   - 设置Git pre-commit钩子
+   - 设置Git commit-msg钩子
    - 检查环境配置
 
 ## 使用方法
@@ -57,16 +57,16 @@
 ```ini
 [openai]
 # OpenAI API密钥
-api_key = your_api_key_here
+api_key = YOUR_API_KEY_HERE
 
 # API请求地址 (默认: https://api.openai.com/v1/chat/completions)
-api_url = https://api.openai.com/v1/chat/completions
+api_url = https://api.moonshot.cn/v1/chat/completions
 
 # 模型名称 (默认: gpt-4)
-model = gpt-4
+model = kimi-k2-0711-preview
 
-# 最大生成令牌数 (默认: 1000)
-max_tokens = 1000
+# 最大生成令牌数 (默认: 2000)
+max_tokens = 2000
 
 # 生成温度 (默认: 0.1)
 temperature = 0.1
